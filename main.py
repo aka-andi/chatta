@@ -1,8 +1,9 @@
 import nltk 
+nltk.download('punkt')
 from nltk.stem.lancaster import LancasterStemmer
 stemmer = LancasterStemmer()
 
-import numpy
+import numpy as np
 import tflearn
 import tensorflow
 import random
@@ -18,7 +19,7 @@ docs_y = []
 
 # stemming with tokenization
 for intent in data["intents"]:
-    for pattern in intent[""]:  
+    for pattern in intent["patterns"]:  
         tokens = nltk.word_tokenize(pattern)
         words.extend(tokens)
         docs_x.append(tokens)
@@ -53,12 +54,11 @@ for x, doc in enumerate(docs_x):
     training.append(bag)
     out.append(out_row)
 
-training = numpy.array(training)
+training = np.array(training)
 out = np.array(out)
 
 # training model using tflearn
 
-tensorflow.reset_default_graph()
 nk = tflearn.input_data(shape=[None, len(training[0])])
 nk = tflearn.fully_connected(nk, 8) # 8 neurons in first hidden layer
 nk = tflearn.fully_connected(nk, 8) # 8 neurons in second hidden layer
