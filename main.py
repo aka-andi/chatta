@@ -1,5 +1,4 @@
 import nltk 
-nltk.download('punkt')
 from nltk.stem.lancaster import LancasterStemmer
 stemmer = LancasterStemmer()
 
@@ -8,54 +7,62 @@ import tflearn
 import tensorflow
 import random
 import json
+import pickle # load lists into pickle file for subsequent training executions
 
 with open("intents.json") as file:
     data = json.load(file)
 
-words = []
-labels = []
-docs_x = []
-docs_y = []
+try:
+    with open("data.pickle", "rb") as f:
+        words, labels, training, out = pickle.load(f)
+except:
+    words = []
+    labels = []
+    docs_x = []
+    docs_y = []
 
-# stemming with tokenization
-for intent in data["intents"]:
-    for pattern in intent["patterns"]:  
-        tokens = nltk.word_tokenize(pattern)
-        words.extend(tokens)
-        docs_x.append(tokens)
-        docs_y.append(intent["tag"])
+    # stemming with tokenization
+    for intent in data["intents"]:
+        for pattern in intent["patterns"]:  
+            tokens = nltk.word_tokenize(pattern)
+            words.extend(tokens)
+            docs_x.append(tokens)
+            docs_y.append(intent["tag"])
 
-        if intent["tag"] not in labels:
-            labels.append(intent["tag"])
+            if intent["tag"] not in labels:
+                labels.append(intent["tag"])
 
-words = [stemmer.stem(w.lower()) for w in words if w.isalpha()]
-words = sorted(list(set(words)))
+    words = [stemmer.stem(w.lower()) for w in words if w.isalpha()]
+    words = sorted(list(set(words)))
 
-labels = sorted(labels)
+    labels = sorted(labels)
 
-# bag of words one hot encoding for training model
-training = []
-out = []
+    # bag of words one hot encoding for training model
+    training = []
+    out = []
 
-out_empty = [0 for _ in range(len(labels))] # _ throwaway variable
+    out_empty = [0 for _ in range(len(labels))] # _ throwaway variable
 
-for x, doc in enumerate(docs_x):
-    bag = []
+    for x, doc in enumerate(docs_x):
+        bag = []
 
-    tokens = [stemmer.stem(w) for w in doc]
+        tokens = [stemmer.stem(w) for w in doc]
 
-    for w in words:
-        status = 1 if w in tokens else 0
-        bag.append(status)
-    
-    out_row = out_empty[:]  # initialize copy
-    out_row[labels.index(docs_y[x])] = 1
+        for w in words:
+            status = 1 if w in tokens else 0
+            bag.append(status)
+        
+        out_row = out_empty[:]  # initialize copy
+        out_row[labels.index(docs_y[x])] = 1
 
-    training.append(bag)
-    out.append(out_row)
+        training.append(bag)
+        out.append(out_row)
 
-training = np.array(training)
-out = np.array(out)
+    training = np.array(training)
+    out = np.array(out)
+
+    with open("data.pickle", "wb") as f:
+        pickle.dump((words, labels, training, out), f)
 
 # training model using tflearn
 
@@ -67,5 +74,8 @@ nk = tflearn.regression(nk)
 
 model = tflearn.DNN(nk)
 
-model.fit(training, out, n_epoch=1000, batch_size=8, show_metric=True)
-model.save("model.tflearn")
+try:
+    model.load("model.tflearn")
+except:
+    model.fit(training, out, n_epoch=1000, batch_size=8, show_metric=True)
+    model.save("model.tflearn")
