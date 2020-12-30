@@ -31,3 +31,27 @@ words = [stemmer.stem(w.lower()) for w in words if w.isalpha()]
 words = sorted(list(set(words)))
 
 labels = sorted(labels)
+
+# bag of words one hot encoding for training model
+training = []
+out = []
+
+out_empty = [0 for _ in range(len(labels))] # _ throwaway variable
+
+for x, doc in enumerate(docs_x):
+    bag = []
+
+    tokens = [stemmer.stem(w) for w in doc]
+
+    for w in words:
+        status = 1 if w in tokens else 0
+        bag.append(status)
+    
+    out_row = out_empty[:]  # initialize copy
+    out_row[labels.index(docs_y[x])] = 1
+
+    training.append(bag)
+    out.append(out_row)
+
+training = numpy.array(training)
+out = np.array(out)
