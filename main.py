@@ -55,3 +55,17 @@ for x, doc in enumerate(docs_x):
 
 training = numpy.array(training)
 out = np.array(out)
+
+# training model using tflearn
+
+tensorflow.reset_default_graph()
+nk = tflearn.input_data(shape=[None, len(training[0])])
+nk = tflearn.fully_connected(nk, 8) # 8 neurons in first hidden layer
+nk = tflearn.fully_connected(nk, 8) # 8 neurons in second hidden layer
+nk = tflearn.fully_connected(nk, len(out[0]), activation="softmax") # output layer, neurons per label
+nk = tflearn.regression(nk)
+
+model = tflearn.DNN(nk)
+
+model.fit(training, out, n_epoch=1000, batch_size=8, show_metric=True)
+model.save("model.tflearn")
